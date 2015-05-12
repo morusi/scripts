@@ -5,15 +5,16 @@ import urllib2
 import sys
 
 class ZabbixTools:
-    def __init__(self,url,header,user,passwd):
+    def __init__(self,url,user,passwd):
+        """
+        useage:
+            plase input url,username,userpassword
+        """
         self.url = url
-        self.header = header
+        self.header = {"Content-Type": "application/json"}
         self.user = user
         self.passwd = passwd
-        self.authID = self.user_login()
-    def showauth(self):
-        print self.authID
-
+        self.authID = self.user_login()        
     def user_login(self):
         data = json.dumps(
             {
@@ -63,7 +64,6 @@ class ZabbixTools:
             response = json.loads(result.read())
             result.close()
             self.authID = response['result']
-
     def get_data(self,data,hostip=""):
         request = urllib2.Request(self.url,data)
         for key in self.header:
@@ -120,24 +120,6 @@ class ZabbixTools:
         else:
             print '\t',"\033[1;31;40m%s\033[0m" % "Get Group  Error or cannot find this group,please check !"
             return 0
-    def template_get(self):
-        data = json.dumps(
-            {
-                "jsonrpc": "2.0",
-                "method": "template.get",
-                "params": {
-                    "output": "extend",
-                    },
-                "auth": self.authID,
-                "id": 1
-            })
-        res = self.get_data(data)['result']
-        if (res != 0) and (len(res) != 0):
-            for template in res:
-                print "template ID:", template['templateid'], "template name:" ,template['name']
-        else:
-            print '\t',"\033[1;31;40m%s\033[0m" % "Get template  Error or cannot find this template,please check !"
-            return 0
     def host_create(self):
         data = json.dumps(
             {
@@ -169,27 +151,134 @@ class ZabbixTools:
                 "auth": self.authID,
                 "id": 1                
             })
-#        res = self.get_data(data)['result']
         res = self.get_data(data)
         print res
+    def template_get(self):
+        data = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "method": "template.get",
+                "params": {
+                    "output": "extend",
+                    },
+                "auth": self.authID,
+                "id": 1
+            })
+        res = self.get_data(data)['result']
+        if (res != 0) and (len(res) != 0):
+            for template in res:
+                print "template ID:", template['templateid'], "template name:" ,template['name']
+        else:
+            print '\t',"\033[1;31;40m%s\033[0m" % "Get template  Error or cannot find this template,please check !"
+            return 0
+    def graph_get(self):
+        data = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "method": "graph.get",
+                "params": {
+                    "output": ["id","name","status","host"],
+                    "hostids": 10107
+                },
+                "auth": self.authID,
+                "id": 1             
+            })
+        res = self.get_data(data)['result']
+        print res
+    def scrren_get(self):
+        data = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "method": "screen.get",
+                "params": {
+                    "output": ["scrrenid", "name",]
+                },
+                "auth": self.authID,
+                "id": 1   
+            })
+        res = self.get_data(data)['result']
+        print res
+    def scrren_create(self):
+        data = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "method": "screen.create",
+                "params":{
+                    "name": "testscreen",
+                    "hsize": 3,
+                    "vsize": 2
+                },
+                "auth": self.authID,
+                "id": 1
+            })
+        res = self.get_data(data)
+        print res
+    def scrrenitem_create(self):
+        data = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "method": "screenitem.create",
+                "params": {
+                    "screenid": 26,
+                    "resourcetype": 0,
+                    "resourceid": 590,
+                    "width": 500,
+                    "Height": 100,
+                    "x": 0,
+                    "y": 0
+                },
+                "auth": self.authID,
+                "id": 1
+            })
+        res = self.get_data(data)
+        print res 
+    def scrrenitem_get(self):
+        data = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "method": "screenitem.get",
+                "params": {
+                    "output": "extend",
+                    "screenids": "16"
+                },
+                "auth": self.authID,
+                "id": 1   
+            })
+        res = self.get_data(data)['result']
+        print res
 
+
+def showmenu():
+    print """print useage:
+    """ + sys.argv[0] + """ -h print the help
+    -CH [host1,host2,……] -t [Template1,Template2,……]
+
+    """
 def main():
     url = "http://192.168.1.17/zabbix/api_jsonrpc.php"
-    header = {"Content-Type": "application/json"}
     user = "yige.han"
     passwd = "hanyige"
-    test = ZabbixTools(url,header,user,passwd)
-
+#    print ZabbixTools.__init__.__doc__
+    test = ZabbixTools(url,user,passwd)
+    if len(sys.argv) < 2 or sys.argv[1] == "-h" :
+        showmenu()
+    elif sys.argv[1] == "-CH":
+        print sys.argv[1]
+        if sys.argv[2].islist or sys.argv[2].is :
+            print "please in the hostlist," + showmenu
     #test.user_login()
-
-    #test.host_get()
     #test.hostgroup_get()
     #test.template_get()
     #test.host_create()
-    test.showauth()
-    test.user_logout()
-    test.showauth()
+    #test.showauth()
+    #test.graph_get()
+    #test.scrren_create()
+    #test.scrren_get()
+    #test.user_logout()
+    #test.showauth()
     #test.host_get()
+    #test.scrrenitem_create()
+    #test.scrren_get()
 if __name__ == '__main__':
     main()
     

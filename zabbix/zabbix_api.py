@@ -115,12 +115,14 @@ class ZabbixTools:
             })
         res = self.get_data(data)['result']
         if (res != 0) and (len(res) != 0):
-            for group in res:
-                print "Group ID:", group['groupid'], "Group name:" ,group['name']
+            return res
+            # for group in res:
+            #     print "Group ID:", group['groupid'], "Group name:" ,group['name']
         else:
             print '\t',"\033[1;31;40m%s\033[0m" % "Get Group  Error or cannot find this group,please check !"
             return 0
-    def host_create(self):
+    def host_create(self,hostname,hostip,groupid,templateid):
+        """ the input data  hostname , hostip , groupid, templateid """
         data = json.dumps(
             {
                 "jsonrpc": "2.0",
@@ -132,42 +134,38 @@ class ZabbixTools:
                             "type": 1,
                             "main": 1,
                             "useip": 1,
-                            "ip": "192.168.1.15",
+                            "ip": '192.168.1.15',
                             "dns": "",
                             "port": "10050"
                         }
                     ],
-                    "groups": [
-                        {
-                            "groupid": "2"
-                        }
-                    ],
-                    "templates": [
-                        {
-                            "templateid": "10001"
-                        }
-                    ],  
+                    "groups": groupid,
+                
+                    "templates": templateid,
+
                 },
                 "auth": self.authID,
                 "id": 1                
             })
         res = self.get_data(data)
-        print res
+        return res
     def template_get(self):
         data = json.dumps(
             {
                 "jsonrpc": "2.0",
                 "method": "template.get",
                 "params": {
-                    "output": "extend",
+                    "output": ["name", "templateid"],
                     },
                 "auth": self.authID,
                 "id": 1
             })
         res = self.get_data(data)['result']
+
         if (res != 0) and (len(res) != 0):
-            for template in res:
-                print "template ID:", template['templateid'], "template name:" ,template['name']
+            return res
+            # for template in res:
+            #     print "template ID:", template['templateid'], "template name:" ,template['name']
         else:
             print '\t',"\033[1;31;40m%s\033[0m" % "Get template  Error or cannot find this template,please check !"
             return 0
@@ -247,38 +245,57 @@ class ZabbixTools:
         res = self.get_data(data)['result']
         print res
 
-
 def showmenu():
     print """print useage:
     """ + sys.argv[0] + """ -h print the help
-    -CH [host1,host2,……] -t [Template1,Template2,……]
+    -CH 'host,hostip' -G 'group1,goup2' -T 'Template1,Template2'
 
     """
 def main():
     url = "http://192.168.1.17/zabbix/api_jsonrpc.php"
     user = "yige.han"
     passwd = "hanyige"
-#    print ZabbixTools.__init__.__doc__
     test = ZabbixTools(url,user,passwd)
-    if len(sys.argv) < 2 or sys.argv[1] == "-h" :
+    if len(sys.argv) <= 2 or sys.argv[1].lower() == '-h':
         showmenu()
-    elif sys.argv[1] == "-CH":
-        print sys.argv[1]
-        if sys.argv[2].islist or sys.argv[2].is :
-            print "please in the hostlist," + showmenu
-    #test.user_login()
-    #test.hostgroup_get()
-    #test.template_get()
-    #test.host_create()
-    #test.showauth()
-    #test.graph_get()
-    #test.scrren_create()
-    #test.scrren_get()
-    #test.user_logout()
-    #test.showauth()
-    #test.host_get()
-    #test.scrrenitem_create()
-    #test.scrren_get()
+        exit(0)
+    elif sys.argv[1][1:].lower() == "ch" and sys.argv[3][1:].lower() == "g" and sys.argv[5][1:].lower() == "t":
+        #host creat    
+        hosts = []
+        hosts = sys.argv[2].split(',') #get in put hosts
+        templates = {} 
+        templatesvalues = ''
+        alltemplates = test.template_get() #get zabbix server all templates
+        groups = {}
+        groupsvalues =''
+        allgroups =test.hostgroup_get() # get zabbix server all groups
+        for i in sys.argv[4].split(','):
+            # get input  goups
+            for j in  allgroups:
+                if i.lower() == j.get('name').lower():
+                    groups[j.get('name')] = j.get('groupid')
+                    groupsvalues += "\ngroup id:" + j.get('groupid') + " group name: " + j.get('name')
+
+        for i in sys.argv[6].split(','):
+            #get input templates
+            for j in alltemplates:
+                if i == j.get('name'):
+                    templates[j.get('name')] = j.get('templateid') 
+                    templatesvalues += "\ntemplate id:" + j.get('templateid') + "  template name:" + j.get('name')
+        iscreate = raw_input(" hosts name:" + hosts[0] + " hosts ip:" + hosts[1] + templatesvalues + groupsvalues + '\n' + "please input (Y/N):").lower()
+        if iscreate == 'y':
+            # is it create?
+            print "plase wait creating"
+            hostname = hosts[0]
+            hostip = hosts[1]
+            groupid = groups.values()
+            templateid = templates.values()
+            print test.host_create(hostname,hostip,groupid,templateid)
+    else:
+        print sys.argv[2][1:].lower() , sys.argv[3][1:].lower() , sys.argv[5][1:].lower() 
+        for i in range(0,len(sys.argv)):
+            print  str(i) + " : " + sys.argv[i]
+
 if __name__ == '__main__':
     main()
     

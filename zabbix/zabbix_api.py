@@ -211,7 +211,7 @@ class ZabbixTools:
             })
         res = self.get_data(data)
         print res
-    def scrrenitem_create(self):
+    def screenitem_create(self):
         data = json.dumps(
             {
                 "jsonrpc": "2.0",
